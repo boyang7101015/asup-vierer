@@ -1,0 +1,683 @@
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>ASUP Viewer</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet"/>
+<link href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" rel="stylesheet"/>
+<style>
+html, body {
+  height: 100%;
+}
+body {
+  background: linear-gradient(135deg, #eaf4ff 0%, #f9fafb 100%);
+  font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+  min-height: 100vh;
+}
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #214478;
+  color: #fff;
+  box-shadow: 0 2px 10px #0001;
+  border-bottom: 1.5px solid #1b3457;
+}
+.app-header .logo {
+  font-weight: bold;
+  font-size: 1.5rem;
+  letter-spacing: 1px;
+  margin-right: 28px;
+  color: #f8fafc;
+}
+.main-grid {
+  display: grid;
+  grid-template-columns: 270px 1fr 340px;
+  gap: 22px;
+  height: calc(100vh - 68px);
+  max-width: 4096px;
+  margin: 28px auto;
+  padding: 0 10px;
+  transition: grid-template-columns 0.3s;
+}
+.main-grid.hide-sideinfo {
+  grid-template-columns: 270px 1fr 0px !important;
+}
+.left-sidebar {
+  background: #f2f6fb;
+  border-radius: 12px;
+  border: 1.5px solid #e2eaf3;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  box-shadow: 0 0 8px #0001;
+}
+.file-search-bar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #f2f6fb;
+  padding: 15px 12px 7px 12px;
+  border-bottom: 1.5px solid #e2eaf3;
+}
+.file-list-area {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 70vh;
+  padding: 4px 6px 12px 6px;
+  min-height: 60px;
+}
+.file-list-item {
+  display: block;
+  padding: 8px 12px;
+  border-radius: 5px;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-size: 15px;
+  color: #265387;
+  margin-bottom: 3px;
+  cursor: pointer;
+  transition: background 0.13s, color 0.15s;
+  outline: none;
+  position: relative;
+}
+.file-list-item.active, .file-list-item:focus {
+  background: #3166bb;
+  color: #fff;
+  font-weight: 600;
+}
+.file-list-item:hover {
+  background: #e8f0fd;
+  color: #1656a1;
+}
+.main-content {
+  background: #fff;
+  border-radius: 12px;
+  border: 1.5px solid #e2eaf3;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-shadow: 0 0 10px #0001;
+  transition: border-radius 0.3s;
+}
+.main-content-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px 8px 22px;
+  border-bottom: 1px solid #e2eaf3;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #23436a;
+}
+.main-content-body {
+  flex: 1;
+  background: #fbfcfd;
+  border-radius: 0 0 12px 12px;
+  overflow-x: auto;
+  /* padding: 0; // 表格需要貼邊就不要 padding */
+}
+#file-content > table.dataTable {
+  margin: 18px 22px 22px 22px;  /* 表格的內距，如果你想四邊留白 */
+}
+.main-content-body table.dataTable {
+  font-size: 1.08rem !important;
+  line-height: 1.8 !important;
+  letter-spacing: 0.02em;
+  color: #1a2333;
+  background: #fff;
+  min-width: 900px;
+  width: max-content !important;
+}
+.main-content-body table.dataTable th,
+.main-content-body table.dataTable td {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  text-align: left !important;
+  vertical-align: middle !important;
+}
+.main-content-body table.dataTable thead th {
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: #3166bb;
+  color: #fff;
+  letter-spacing: 0.03em;
+  border-bottom: 2px solid #2857a5;
+  text-align: left !important;
+}
+.main-content-body table.dataTable tbody td {
+  font-size: 1.06rem;
+  background: #f8fafc;
+  text-align: left !important;
+}
+/* 長文字檔的捲軸 */
+.file-content-scrollable {
+  max-height: 100%;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  background: #f8fafc;
+  border-radius: 6px;
+  padding: 14px 14px 14px 16px;
+  font-family: "JetBrains Mono", "Consolas", "Menlo", monospace;
+  font-size: 1rem;
+  white-space: pre-wrap;
+  box-shadow: 0 2px 6px #0001;
+  overflow-x: auto;
+}
+#file-content pre {
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: inherit;
+  background: transparent;
+  border: none;
+  overflow-x: auto;
+  padding: 0;
+}
+
+.side-info {
+  background: #f7fafc;
+  border-radius: 12px;
+  border: 1.5px solid #e2eaf3;
+  min-width: 0;
+  height: 100%;
+  padding: 24px 18px 12px 20px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 10px #0001;
+  justify-content: space-between;
+  transition: width 0.3s, opacity 0.3s;
+  position: relative;
+}
+.side-info.hide {
+  width: 0 !important;
+  min-width: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+  padding: 0 !important;
+  border: none !important;
+}
+.side-info-section { margin-bottom: 18px; }
+.side-info-label {
+  font-size: 13px;
+  color: #4973a6;
+  margin-bottom: 2px;
+}
+.side-info-value {
+  font-size: 15px;
+  font-weight: 500;
+  color: #273b55;
+  margin-bottom: 2px;
+  white-space: pre-line;
+}
+.side-info .btn-warning {
+  width: 100%;
+  margin-top: 12px;
+  font-size: 15px;
+}
+.side-action-btns .btn {
+  width: 100%;
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+.toggle-sideinfo-btn {
+  position: absolute;
+  top: 20px;
+  right: -28px;
+  z-index: 20;
+  background: #3166bb;
+  color: #fff;
+  border-radius: 8px 0 0 8px;
+  border: none;
+  padding: 3px 9px 3px 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  box-shadow: 0 2px 8px #0001;
+  font-size: 1.1rem;
+}
+.toggle-sideinfo-btn:hover { background: #184e97; }
+.status-badge {
+  background: #e0f5de;
+  color: #16951a;
+  border-radius: 8px;
+  padding: 2px 11px;
+  font-size: 0.93rem;
+  margin-left: 6px;
+  font-weight: 600;
+}
+.toast-container { z-index: 1200; }
+.toast { min-width: 240px; }
+
+@media (max-width: 1100px) {
+  .main-grid { grid-template-columns: 200px 1fr 210px; }
+}
+@media (max-width: 900px) {
+  .main-grid, .main-grid.hide-sideinfo { grid-template-columns: 1fr !important; gap: 8px;}
+  .left-sidebar, .side-info { height: auto;}
+  .side-info { margin-top: 10px;}
+  .main-content { min-width: 0;}
+  #file-content table th, #file-content table td { text-align: left !important; }
+}
+@media (max-width: 700px) {
+  .app-header { flex-direction: column; gap: 8px;}
+  .main-grid { margin: 8px 0; }
+}
+
+  
+.table-scroll-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+body {
+  overflow-x: hidden;
+}
+.table-scroll-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+.table-scroll-wrapper table {
+  min-width: 0;
+  width: max-content;
+  table-layout: fixed;
+}
+
+}
+/* Fixed top/bottom controls */
+.table-controls-top,
+.table-controls-bottom {
+  background: #fff;
+  padding: 0 1rem;
+  z-index: 5;
+  white-space: nowrap;
+}
+.table-controls-top {
+  margin-bottom: 0.5rem;
+}
+.table-controls-bottom {
+  margin-top: 0.5rem;
+}
+
+
+/* Fixed top/bottom controls sticky positioning */
+.table-controls-top,
+.table-controls-bottom {
+  position: sticky !important;
+  left: 0;
+  background: #fff;
+  padding: 0 1rem;
+  z-index: 10;
+  white-space: nowrap;
+}
+.table-controls-top {
+  top: 0;
+  margin-bottom: 0.5rem;
+}
+.table-controls-bottom {
+  bottom: 0;
+  margin-top: 0.5rem;
+}
+
+</style>
+</head>
+<body>
+<!-- 頂端工具列 -->
+<header class="app-header py-2 px-3 d-flex align-items-center flex-wrap shadow-sm">
+<span class="logo me-3">ASUP Viewer</span>
+<form class="d-flex align-items-center me-3" enctype="multipart/form-data" id="uploadForm" style="gap:10px;">
+<label class="form-label mb-0" for="file">
+<input accept=".7z" class="form-control d-inline-block" id="file" name="file" style="width:170px;display:inline;" type="file"/>
+</label>
+<button class="btn btn-sm btn-primary" id="uploadBtn" type="submit">
+<span class="bi bi-upload" id="uploadIcon"></span>
+<span id="uploadText">上傳並解壓縮</span>
+<span aria-hidden="true" class="spinner-border spinner-border-sm d-none" id="uploadSpinner" role="status"></span>
+</button>
+</form>
+<span class="me-2"><i class="bi bi-hdd-network"></i> <span id="cluster-name">尚未解析</span></span>
+<span class="me-2"><i class="bi bi-cpu"></i> <span id="node-name">尚未解析</span></span>
+<span class="me-2"><i class="bi bi-shield-lock"></i> <span id="serial-number">尚未解析</span></span>
+<button class="btn btn-warning btn-sm ms-3 d-none" id="disk-failed-button">
+<i class="bi bi-exclamation-triangle"></i> 硬碟故障
+    </button>
+<div class="flex-fill"></div>
+</header>
+<div class="main-grid hide-sideinfo"><!-- 預設隱藏右側 -->
+<!-- 左側：檔案清單 -->
+<aside class="left-sidebar">
+<div class="file-search-bar">
+<div class="d-flex align-items-center">
+<input aria-label="搜尋檔案" class="form-control form-control-sm me-2" id="file-search" placeholder="搜尋檔案名稱" type="text"/>
+<button class="btn btn-outline-secondary btn-sm" id="sortFileBtn" title="切換排序" type="button">
+<i class="bi bi-sort-alpha-down" id="sortIcon"></i>
+</button>
+</div>
+</div>
+<div class="file-list-area" id="file-list-area"></div>
+</aside>
+<!-- 中央：內容區 -->
+<main class="main-content">
+<div class="main-content-header">
+<span class="fw-bold" id="content-title">檔案內容</span>
+<button aria-label="自訂欄位選擇" class="btn btn-secondary btn-sm" id="customColumnBtn">
+<i class="bi bi-sliders"></i>
+</button>
+</div>
+<div class="main-content-body" id="file-content">
+        尚未選擇檔案，請從左側選擇檔案以檢視內容。
+      </div>
+</main>
+<!-- 右側：檔案資訊 -->
+<aside class="side-info d-flex flex-column hide" id="side-info-panel">
+<button class="toggle-sideinfo-btn" id="toggleSideinfoBtn" title="顯示右側屬性欄"><i class="bi bi-chevron-left"></i></button>
+<div>
+<div class="side-info-section">
+<div class="side-info-label">上傳檔案名稱</div>
+<div class="side-info-value" id="uploaded-file-name">尚未上傳</div>
+</div>
+<div class="side-info-section">
+<div class="side-info-label">模組名稱</div>
+<div class="side-info-value" id="module-name">尚未解析</div>
+</div>
+</div>
+<div class="side-info-section mt-auto">
+<button class="btn btn-warning d-none" id="side-warning-btn">
+<i class="bi bi-exclamation-diamond"></i> 查看警示
+        </button>
+</div>
+</aside>
+</div>
+<!-- Modal: 硬碟故障 -->
+<div aria-hidden="true" aria-labelledby="diskFailedModalLabel" class="modal fade" id="diskFailedModal" tabindex="-1">
+<div class="modal-dialog"><div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title" id="diskFailedModalLabel">硬碟故障詳情</h5>
+<button aria-label="關閉" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body"><pre id="modal-disk-failed-info" style="white-space: pre-wrap;"></pre></div>
+</div></div>
+</div>
+<!-- Modal: 欄位自訂 -->
+<div aria-hidden="true" aria-labelledby="columnSelectionModalLabel" class="modal fade" id="columnSelectionModal" tabindex="-1">
+<div class="modal-dialog"><div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title" id="columnSelectionModalLabel">選擇要顯示的欄位</h5>
+<button aria-label="關閉" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<form id="columnSelectionForm"></form>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" data-bs-dismiss="modal" type="button">取消</button>
+<button class="btn btn-primary" id="applyColumnBtn" type="button">確定</button>
+</div>
+</div></div>
+</div>
+</body>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// === 你之前所有 JS 功能都可以直接照用 ===
+let uploadedFileName = "";
+let extractedFiles = [];
+let diskFailedData = [];
+let currentTable = null;
+let customColumnState = [];
+let fileSortAsc = true;
+let selectedFile = null;
+
+// ---- 合併按鈕：上傳+解壓縮 ----
+$('#uploadForm').on('submit', async function(e) {
+  e.preventDefault();
+  let fileInput = $('#file')[0];
+  if (!fileInput.files.length) {
+    alert('請選擇 7z 檔案');
+    return;
+  }
+  let formData = new FormData();
+  formData.append('file', fileInput.files[0]);
+  // 按鈕顯示 loading
+  $('#uploadBtn').prop('disabled', true);
+  $('#uploadIcon').addClass('d-none');
+  $('#uploadText').text('處理中...');
+  $('#uploadSpinner').removeClass('d-none');
+  $('#file-list-area').empty();
+  $('#file-content').html('尚未選擇檔案，請從左側檔案列表選擇。');
+  uploadedFileName = "";
+  diskFailedData = [];
+  updateDiskFailedBtn();
+
+  try {
+    // 上傳
+    let resp = await fetch('/upload', { method: 'POST', body: formData });    let data = await resp.json();
+    if (!data.success) throw new Error(data.error || '未知錯誤');
+    uploadedFileName = data.file_name;
+    $('#uploaded-file-name').text(uploadedFileName);
+    $('#cluster-name').text(data.cluster_name || '未知');
+    $('#node-name').text(data.sysconfig_data?.node_name || '未知');
+    $('#serial-number').text(data.sysconfig_data?.serial_number || '未知');
+    $('#module-name').text(data.sysconfig_data?.module_name || '未知');
+    // 解壓
+    let extractResp = await fetch('/extract', { method: 'POST' });
+    let extractData = await extractResp.json();
+    if (!extractData.success) throw new Error(extractData.error || '未知錯誤');
+    extractedFiles = extractData.files || [];
+    renderFileList(extractedFiles);
+    $('#cluster-name').text(extractData.cluster_name || '未知');
+    $('#node-name').text(extractData.sysconfig_data?.node_name || '未知');
+    $('#serial-number').text(extractData.sysconfig_data?.serial_number || '未知');
+    $('#module-name').text(extractData.sysconfig_data?.module_name || '未知');
+    diskFailedData = extractData.disk_failed || [];
+    updateDiskFailedBtn();
+    $('#file-content').html('解壓縮完成，請從左側檔案列表選擇檔案查看內容。');
+  } catch (err) {
+    alert('處理失敗：' + err.message);
+  }
+  // 還原按鈕
+  $('#uploadBtn').prop('disabled', false);
+  $('#uploadIcon').removeClass('d-none');
+  $('#uploadText').text('上傳並解壓縮');
+  $('#uploadSpinner').addClass('d-none');
+});
+
+// ---- 排序 ----
+$('#sortFileBtn').on('click', function() {
+  fileSortAsc = !fileSortAsc;
+  $('#sortIcon').attr('class', fileSortAsc ? 'bi bi-sort-alpha-down' : 'bi bi-sort-alpha-up');
+  renderFileList(extractedFiles);
+});
+
+// ---- 搜尋 ----
+$('#file-search').on('input', function() {
+  renderFileList(extractedFiles);
+});
+
+// ---- 檔案清單渲染 ----
+function renderFileList(files) {
+  let area = $('#file-list-area');
+  area.empty();
+  if (!files.length) {
+    area.append('<div class="file-list-item text-muted">（無檔案）</div>');
+    return;
+  }
+  let sorted = [...files].sort((a, b) => fileSortAsc
+    ? a.localeCompare(b, 'zh-Hant')
+    : b.localeCompare(a, 'zh-Hant')
+  );
+  let keyword = $('#file-search').val()?.toLowerCase() || '';
+  let showCount = 0;
+  sorted.forEach(f => {
+    if (keyword && !f.toLowerCase().includes(keyword)) return;
+    showCount++;
+    let div = $('<button>')
+      .addClass('file-list-item')
+      .attr('tabindex', 0)
+      .attr('type', 'button')
+      .text(f)
+      .toggleClass('active', f === selectedFile)
+      .on('click keydown', function(e) {
+        if (e.type === "click" || (e.type === "keydown" && (e.key === "Enter" || e.key === " "))) {
+          selectedFile = f;
+          renderFileList(extractedFiles);
+          $('#content-title').text(f);
+          loadFileContent(f);
+          // 同步右側屬性顯示
+          $('#uploaded-file-name').text(f || uploadedFileName || '尚未上傳');
+          $('#module-name').text($('#module-name').text() || '尚未解析');
+        }
+      });
+    area.append(div);
+  });
+  if (showCount === 0) {
+    area.append('<div class="file-list-item text-muted">查無結果</div>');
+  }
+}
+
+// ---- 檔案內容顯示（自動純文字捲動條） ----
+function loadFileContent(filename) {
+  fetch(`/view-file?file=${encodeURIComponent(filename)}`)
+    .then(r => r.json())
+    .then(data => {
+      $('#file-content').removeClass('file-content-scrollable');
+      $('#file-content').html(data.content);
+
+      // 判斷是不是很長的 txt 檔（副檔名 + 內容行數/字數）
+      if (filename.toLowerCase().endsWith('.txt')) {
+        let textOnly = $('<div>').html(data.content).text();
+        if (textOnly.split('\n').length > 60 || textOnly.length > 2500) {
+          $('#file-content').addClass('file-content-scrollable');
+        }
+      }
+
+      if ($.fn.DataTable.isDataTable('#file-content table')) {
+        $('#file-content table').DataTable().destroy();
+      }
+      let table = $('#file-content table');
+      if (table.length) {
+        currentTable = table.DataTable({
+          paging: true,
+          searching: true,
+          ordering: true,
+          
+          responsive: false,
+          autoWidth: true,
+          dom: 'lfrtip'
+        });
+        let searchInput = $('div.dataTables_filter input');
+        searchInput.off('input.dt').on('input.dt', function() {
+          currentTable.search(this.value).draw();
+        });
+      }
+    })
+    .catch(err => {
+      $('#file-content').removeClass('file-content-scrollable');
+      $('#file-content').html(`<p class="text-danger">載入失敗: ${err.message}</p>`);
+    });
+}
+
+function updateDiskFailedBtn() {
+  if (diskFailedData.length > 0) {
+    $('#disk-failed-button').removeClass('d-none');
+    $('#side-warning-btn').removeClass('d-none');
+  } else {
+    $('#disk-failed-button').addClass('d-none');
+    $('#side-warning-btn').addClass('d-none');
+  }
+}
+
+// ---- 鍵盤切換 ----
+$('#file-list-area').on('keydown', '.file-list-item', function(e){
+  let $items = $('#file-list-area .file-list-item:visible:not(.text-muted)');
+  let idx = $items.index(this);
+  if (e.key === "ArrowDown") {
+    $items.eq((idx+1) % $items.length).focus();
+    e.preventDefault();
+  } else if (e.key === "ArrowUp") {
+    $items.eq((idx-1+$items.length) % $items.length).focus();
+    e.preventDefault();
+  }
+});
+
+// ---- 硬碟故障彈窗 ----
+$('#disk-failed-button, #side-warning-btn').click(() => {
+  $('#modal-disk-failed-info').text(diskFailedData.join('\n'));
+  let modal = new bootstrap.Modal(document.getElementById('diskFailedModal'));
+  modal.show();
+});
+
+// ---- 欄位自訂 ----
+$('#customColumnBtn').on('click', function() {
+  if (!currentTable) {
+    alert('尚未載入資料表');
+    return;
+  }
+  let form = $('#columnSelectionForm');
+  form.empty();
+  currentTable.columns().every(function(index) {
+    let header = $(this.header()).text() || `欄位 ${index + 1}`;
+    let checked = customColumnState[index] !== false;
+    let checkbox = $(`<div class="form-check">
+        <input class="form-check-input" type="checkbox" id="col${index}" value="${index}" ${checked ? 'checked' : ''}>
+        <label class="form-check-label" for="col${index}">${header}</label>
+      </div>`);
+    form.append(checkbox);
+  });
+  let modal = new bootstrap.Modal(document.getElementById('columnSelectionModal'));
+  modal.show();
+});
+$('#applyColumnBtn').on('click', function() {
+  if (!currentTable) return;
+  let checked = [];
+  $('#columnSelectionForm input:checked').each(function() {
+    checked.push(parseInt($(this).val()));
+  });
+  let colCount = currentTable.columns().count();
+  customColumnState = [];
+  for (let i=0; i<colCount; i++) {
+    customColumnState[i] = checked.includes(i);
+  }
+  if (checked.length === 0) {
+    currentTable.columns().visible(true);
+  } else {
+    currentTable.columns().visible(false);
+    checked.forEach(i => currentTable.column(i).visible(true));
+  }
+  let modalEl = document.getElementById('columnSelectionModal');
+  let modal = bootstrap.Modal.getInstance(modalEl);
+  modal.hide();
+});
+
+// ---- 右側欄顯示/隱藏 ----
+function setSideinfoVisible(show) {
+  if (show) {
+    $('.main-grid').removeClass('hide-sideinfo');
+    $('#side-info-panel').removeClass('hide');
+    $('#toggleSideinfoBtn').attr('title', '隱藏右側屬性欄').html('<i class="bi bi-chevron-right"></i>');
+  } else {
+    $('.main-grid').addClass('hide-sideinfo');
+    $('#side-info-panel').addClass('hide');
+    $('#toggleSideinfoBtn').attr('title', '顯示右側屬性欄').html('<i class="bi bi-chevron-left"></i>');
+  }
+}
+let sideinfoVisible = false; // 預設隱藏
+$('#toggleSideinfoBtn').on('click', function(){
+  sideinfoVisible = !sideinfoVisible;
+  setSideinfoVisible(sideinfoVisible);
+});
+$(window).on('keydown', function(e){
+  if (e.altKey && (e.key === 'r' || e.key === 'R')) {
+    sideinfoVisible = !sideinfoVisible;
+    setSideinfoVisible(sideinfoVisible);
+  }
+});
+setSideinfoVisible(sideinfoVisible);
+</script>
+</html>
+

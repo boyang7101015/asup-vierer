@@ -1,0 +1,7 @@
+flask
+werkzeug
+py7zr
+lxml
+pandas
+gunicorn
+
