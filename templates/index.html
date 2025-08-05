@@ -119,7 +119,7 @@ body {
   flex: 1;
   background: #fbfcfd;
   border-radius: 0 0 12px 12px;
-  overflow-x: auto;
+  overflow-x: hidden;
   /* padding: 0; // 表格需要貼邊就不要 padding */
 }
 #file-content > table.dataTable {
@@ -270,60 +270,40 @@ body {
   .main-grid { margin: 8px 0; }
 }
 
-  
 .table-scroll-wrapper {
   overflow-x: auto;
   width: 100%;
 }
-body {
-  overflow-x: hidden;
-}
-.table-scroll-wrapper {
-  overflow-x: auto;
-  width: 100%;
-}
+
 .table-scroll-wrapper table {
   min-width: 0;
   width: max-content;
   table-layout: fixed;
 }
 
-}
-/* Fixed top/bottom controls */
-.table-controls-top,
-.table-controls-bottom {
-  background: #fff;
-  padding: 0 1rem;
-  z-index: 5;
-  white-space: nowrap;
-}
-.table-controls-top {
-  margin-bottom: 0.5rem;
-}
-.table-controls-bottom {
-  margin-top: 0.5rem;
+body {
+  overflow-x: hidden;
 }
 
-
-/* Fixed top/bottom controls sticky positioning */
 .table-controls-top,
 .table-controls-bottom {
-  position: sticky !important;
-  left: 0;
   background: #fff;
   padding: 0 1rem;
   z-index: 10;
   white-space: nowrap;
+  position: sticky;
+  left: 0;
 }
+
 .table-controls-top {
   top: 0;
   margin-bottom: 0.5rem;
 }
+
 .table-controls-bottom {
   bottom: 0;
   margin-top: 0.5rem;
 }
-
 </style>
 </head>
 <body>
@@ -565,11 +545,12 @@ function loadFileContent(filename) {
           paging: true,
           searching: true,
           ordering: true,
-          
+
           responsive: false,
           autoWidth: true,
-          dom: 'lfrtip'
+          dom: '<"table-controls-top"lf>rt<"table-controls-bottom"ip>'
         });
+        table.wrap('<div class="table-scroll-wrapper"></div>');
         let searchInput = $('div.dataTables_filter input');
         searchInput.off('input.dt').on('input.dt', function() {
           currentTable.search(this.value).draw();
